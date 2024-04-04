@@ -1,0 +1,35 @@
+@keyframes load-anim {
+   0%{
+      transform: rotate(0);
+   }100%{
+      transform: rotate(360deg);
+   }
+}
+@keyframes back-load-anim {
+   0%{
+      opacity: 0;
+   }100%{
+      opacity: 1;
+   }
+}
+
+.back-loading .loading{
+  width: 150px;
+  height: 150px;
+  border: 6px solid black;
+  border-radius: 50%;
+  border-bottom-color: transparent;
+  animation: load-anim 0.5s linear infinite ;
+}
+
+.back-loading{
+   background-color: rgba(0, 0, 0, 0.302);
+   animation: back-load-anim 1s linear 1;
+   height: 100vh;
+   width: 100%;
+   position: absolute;
+   top: 0;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+}
