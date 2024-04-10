@@ -11,58 +11,17 @@ let image_server_path = [''];
 let classes = [''];
 //car, human, sign
 
-function UploadImage() {
+function UploadIVideo() {
   const [image, setImage] = useState(null);
   const [c, setc] = useState(0)
   const [fileType, setFileType] = useState(null);
   const [loading, setloading] = useState(false);
   const [allowToUploaad, setUploadBtton] = useState(false);
 
-  const del = () => {
-    axios.post('http://127.0.0.1:5000/delete', { data: image_server_path })
-      .then(response => {
-      })
-      .catch(error => {
-        // Handle error if needed
-        console.error('Error deleting:', error);
-      });
-  }
-
-
-  const popUp = () => {
-    Swal.fire({
-      title: "Do you want to save the changes?",
-      showDenyButton: true,
-      confirmButtonText: "Save",
-      denyButtonText: `Don't save`,
-      allowOutsideClick: false // Prevent closing without a choice
-    }).then((result) => {
-      /* Read more about isConfirmed, isDenied below */
-      if (result.isConfirmed) {
-        store();
-        positiveFeedback("Saved on cloud");
-      } else if (result.isDenied) {
-        del();
-      }
-    });
-  };
-
-  
-
-  const store = () => {
-    axios.post('http://127.0.0.1:5000/store', { data: image_server_path })
-      .then(response => {
-      })
-      .catch(error => {
-        // Handle error if needed
-        console.error('Error deleting:', error);
-      });
-  }
-
 
   useEffect(() => {
-    setUploadBtton(fileType == "IMAGE")
-    console.log(fileType == "IMAGE");
+    setUploadBtton(fileType == "VIDEO")
+    console.log(fileType == "VIDEO");
   }, [fileType])
 
   const handleFileUpload = (event) => {
@@ -99,18 +58,13 @@ function UploadImage() {
       const formData = new FormData();
       formData.append('image', image);
 
-      const response = await axios.post('http://127.0.0.1:5000/upload_image', formData, {
+      const response = await axios.post('http://127.0.0.1:5000/upload_video', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-
       setloading(false);
-      image_server_path = response.data.message;
-      classes = response.data.classes;
       console.log(response.data);
-      setc(c + 1);
-      popUp();
     } catch (error) {
       console.log(error);
     }
@@ -128,7 +82,7 @@ function UploadImage() {
         onDrop={handleDrop}
         style={{ border: '2px dashed #ccc', padding: '20px', textAlign: 'center' }}
       >
-        <p>Drag and drop a image here or click to browse</p>
+        <p>Drag and drop a video here or click to browse</p>
         <input type="file" onChange={handleFileUpload} style={{ display: 'none' }} />
         <button className='button browse-btn' onClick={() => document.querySelector('input[type="file"]').click()}>Browse</button>
         {
@@ -145,21 +99,7 @@ function UploadImage() {
         ):('')
       }
 
-      <div className='images'>
-      {
-        (c)?(
-          image_server_path.map((el, idx) => {
-            return(
-              <div className='box' key={el} >
-                <YoloObject cls={`${classes[idx]}`} url={`${image_server_path[idx]}`} />
-              </div>
-            )
-          })
-        ):(
-          ""
-        )
-      }
-      </div>
+
       {
         (loading)?(
           < Loading />
@@ -171,4 +111,4 @@ function UploadImage() {
   );
 }
 
-export default UploadImage;
+export default UploadIVideo;
