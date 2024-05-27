@@ -1,90 +1,237 @@
+import mimetypes
+import os
+from urllib.parse import unquote_plus
+from flask import Flask, send_file
+from flask import request, jsonify
 import cv2
 import numpy as np
 from ultralytics import YOLO
 import matplotlib.pyplot as plt
 import math
+from flask import Flask, request
+from flask_restful import Api, Resource
+from flask import Flask, jsonify
+from flask_cors import CORS
+from flask import Flask, jsonify
+from flask_cors import CORS, cross_origin
 import cv2
-import random
+import numpy as np
+from ultralytics import YOLO
+import matplotlib.pyplot as plt
+import math
+from model import YoloEffect
+from model import delete_image_files
+import cv2
+import numpy as np
+from ultralytics import YOLO
+import matplotlib.pyplot as plt
+import cv2
+from flask_mysqldb import MySQL 
+import urllib
 import pyrebase
-import os
-hosting = "http://127.0.0.1:8080/"
+from urllib.parse import unquote_plus
+from urllib.parse import urlparse, unquote
+import urllib.parse
+from model import convert_avi_to_mp4
 
-classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
-              "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
-              "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
-              "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat",
-              "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup",
-              "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli",
-              "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed",
-              "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone",
-              "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors",
-              "teddy bear", "hair drier", "toothbrush"
-              ]
+app = Flask(__name__)
+api = Api(app)
+CORS(app) 
+app = Flask(__name__)
 
 
-media_folder = "media/"
+firebaseConfig = {
+  "apiKey": "AIzaSyDTzQ1MCG_OJPdQGcwfc0OnLEzakcpzjEQ",
+  "authDomain": "prompt-397314.firebaseapp.com",
+  "projectId": "prompt-397314",
+  "storageBucket": "prompt-397314.appspot.com",
+  "messagingSenderId": "885517242235",
+  "appId": "1:885517242235:web:2f509be14004da261677de",
+  "measurementId": "G-0PW0HM9KT0",
+  # "databaseURL": "https://prompt-397314.firebaseio.com"
+  "databaseURL": "https://prompt-397314-default-rtdb.firebaseio.com/"
+}
 
-allowed_classes = ["person", "original", "car", "truck"]
-def delete_image_files(file_paths):
-    for path in file_paths:
+firebase=pyrebase.initialize_app(firebaseConfig)
+storage=firebase.storage()
+
+#convert file url to filename
+def extract_filename_from_url(url):
+    try:
+        # Parse the URL to extract the path and query components
+        parsed_url = urllib.parse.urlparse(url)
+        
+        # Extract the path component from the parsed URL
+        path = parsed_url.path
+        
+        # Split the path by '/' to find the parts containing the filename
+        path_parts = path.split('/')
+        
+        # Find the index of 'o' in the path parts
         try:
-            os.remove(path)
-        except OSError as e:
-            print(f"Error deleting {path}: {e}")
+            index_of_o = path_parts.index('o')
+        except ValueError:
+            return None  # 'o' not found in the path, invalid URL format
+        
+        # Extract the file path parts after 'o/'
+        file_path_parts = path_parts[index_of_o + 1:]
+        
+        # Join the file path parts into a string
+        file_path = '/'.join(file_path_parts)
+        
+        # Decode URL-encoded characters in the file path
+        file_path_decoded = urllib.parse.unquote(file_path)
+        
+        # Split the decoded file path by '?' to remove query parameters
+        file_path_cleaned = file_path_decoded.split('?')[0]
+        
+        # Extract the filename from the cleaned file path
+        filename = file_path_cleaned.split('/')[-1]
+        
+        return filename
+    except Exception as e:
+        print(f"Error extracting filename from URL '{url}': {str(e)}")
+        return None
+
+
+
+
+#delete from firebase
+def delete_file_by_filename(filename):
+    try:
+        # Construct the full path to the file in Firebase Storage
+        file_path = "media/media/" + filename
+        # Get a reference to the file in Firebase Storage
+        file_ref = storage.child(file_path)
+        if file_ref.get_url(None):
+            # Delete the file
+            file_ref.delete(file_path,None)
+        
+        print(f"File '{filename}' deleted successfully.")
+    except Exception as e:
+        print(f"Error deleting file '{filename}': {str(e)}")
+
+
+
+
+
+#loob on images and delete them from firebase storage
+def delete_from_storage(url_arr):
+    for url in url_arr:
+        filename = extract_filename_from_url(url)
+        delete_file_by_filename(filename)
+
+
+
+def store_to_database(names):
+    url_arr = []
+    for _ in names:
+        fle = _
+        cloudfilename=f"media/{fle}"
+        storage.child(cloudfilename).put(fle)
+        url_arr.append(storage.child(cloudfilename).get_url(None))
+
+    # delete_from_storage(url_arr)
+ 
+    return url_arr
+        
+
+
+
+
+
+
+@app.route('/upload_image', methods=['POST'])
+@cross_origin(origin="http://localhost:3000")
+def upload_image():
+    cls = YoloEffect()
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    try:
+        randname = cls.generate_randomname() + ".jpg"
+        file.filename = randname
+        file.save(os.path.join('', file.filename))
+        names = []
+        
+        ret , clss= cls.cut(file.filename)
+        for _ in ret: names.append(_)
+        ret = cls.redirect(ret)
+        # os.path.dirname(os.path.abspath(__file__))
+        
+        #GANs
+        
+       
+        
+        
+        return jsonify({'message':ret,'classes': clss,'status':200})
+    except Exception as e:
+        return jsonify({'error': f'Failed to save file - {str(e)}'}), 500
+    
+    
     
 
+@app.route('/upload_video', methods=['POST'])
+@cross_origin(origin="http://localhost:3000")
+def upload_video():
+    cls = YoloEffect()
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    try:
+        cls = YoloEffect() # to use segment function
+        randname = cls.generate_randomname() + ".mp4" # to generate name
+        file.filename = randname  # rename the file
+        file.save(os.path.join('', file.filename)) # save the file beside this file
+        ret = cls.segment(file.filename)
+        return jsonify({"ret": ret,'status':200})
+    except Exception as e:
+        return jsonify({'error': f'Failed to save file - {str(e)}'}), 500
 
-class YoloEffect:
- def __init__(self):
-  pass
-  
- def generate_randomname(self):
-    ret = ""
-    for _ in range(14):
-        ret += str(random.randint(0, 9))
-    return ret
+ 
 
- def redirect(self,ret):
-    for i in range(len(ret)):
-        ret[i] = hosting + ret[i]
-    return ret
+
+@app.route('/delete', methods=['POST'])
+@cross_origin(origin="http://localhost:3000")
+def delete_images():
+    if request.method == 'POST':
+        data = request.json.get('data') 
+        arr = []
+        for filename in data:
+            idx = filename.find("media")
+            arr.append(filename[idx:])
+        delete_image_files(arr)
+        return 'deleted successfully', 200
     
+    
+    
+@app.route('/store', methods=['POST'])
+@cross_origin(origin="http://localhost:3000")
+def store():
+    if request.method == 'POST':
+        data = request.json.get('data') 
+        try:
+            a = []
+            for filename in data:
+                idx = filename.find("media")
+                a.append(filename[idx:])
+            url = store_to_database(a)
+            delete_image_files(a)
+            # delete_from_storage(url)
+            return jsonify({'images_url':url, 'status':200})
+        except:
+            return 'error', 500
+            
+        
+        
+    
+@app.route('/')
+def hello():
+    return f'Hi Abdul'
 
- def cut(self, imgname):
-
-  ret = []  
-  clss = ["original"]
-  model = YOLO("yolov8n.pt")
-  res = model(imgname, show=False)
-  cv2.waitKey(0)
-  c = 0
-  image = cv2.imread(imgname)
-  img_name = self.generate_randomname()
-  file_path = os.path.join(media_folder, f"{img_name}{c}.jpg")
-  cv2.imwrite(file_path, image)
-  
-  ret.append(media_folder+img_name + f"{c}" + ".jpg")
-
-  for i in res[0].boxes.data:
-      
-      c += 1
-      
-      original_image = cv2.imread(imgname)
-      if classNames[int(res[0].boxes.cls[c - 1])] not in allowed_classes: continue
-      x, y, w, h = math.floor(i[0]), math.floor(i[1]), math.floor(i[2]), math.floor(i[3])
-      cropped_image = original_image[y:h, x:w]
-      img_name = self.generate_randomname()      
-      file_path = os.path.join(media_folder, f"{img_name}{c}.jpg")
-      cv2.imwrite(file_path, cropped_image)
-      ret.append(media_folder+img_name + f"{c}" + ".jpg")
-      clss.append(classNames[int(res[0].boxes.cls[c - 1])])
-  
-  file_path = os.path.join('', imgname) 
-  print(file_path)
-
-  if os.path.exists(file_path):
-      os.remove(file_path)
-
-      
-  return ret, clss
-  
+if __name__ == '__main__':
+    app.run(port=5000, debug=True)
+    
+    
+    
+    
