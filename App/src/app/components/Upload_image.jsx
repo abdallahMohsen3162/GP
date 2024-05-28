@@ -17,6 +17,7 @@ function UploadImage() {
   const [fileType, setFileType] = useState(null);
   const [loading, setloading] = useState(false);
   const [allowToUploaad, setUploadBtton] = useState(false);
+  const [loading2, setLoading2] = useState(false);
 
   const del = () => {
     axios.post('http://127.0.0.1:5000/delete', { data: image_server_path })
@@ -39,8 +40,8 @@ function UploadImage() {
     }).then((result) => {
       /* Read more about isConfirmed, isDenied below */
       if (result.isConfirmed) {
+        setLoading2(true);
         store();
-        positiveFeedback("Saved on cloud");
       } else if (result.isDenied) {
         del();
       }
@@ -52,6 +53,9 @@ function UploadImage() {
   const store = () => {
     axios.post('http://127.0.0.1:5000/store', { data: image_server_path })
       .then(response => {
+        console.log(response.data);
+        setLoading2(false);
+        positiveFeedback("Saved on cloud");
       })
       .catch(error => {
         // Handle error if needed
@@ -162,6 +166,14 @@ function UploadImage() {
       </div>
       {
         (loading)?(
+          < Loading />
+        ):(
+          ""
+        )
+      }
+      
+      {
+        (loading2)?(
           < Loading />
         ):(
           ""

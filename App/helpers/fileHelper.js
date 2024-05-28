@@ -1,7 +1,6 @@
 export function detectTypeImage(name){
    const videoExtensions = ['.mp4', '.webm', '.avi'];
    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
-   console.log(name);
    let lstDot = name.lastIndexOf('.');
    if(lstDot < 0){
      return "Can't determine"

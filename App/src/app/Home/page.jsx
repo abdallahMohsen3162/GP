@@ -13,9 +13,8 @@ export default function Home() {
 
       
       <UploadImage />
-
       
-      <UploadIVideo />
+      {/* <UploadIVideo /> */}
 
 
       
